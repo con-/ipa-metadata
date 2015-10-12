@@ -1,5 +1,6 @@
 'use strict';
 
+var fs = require('fs');
 var async = require('async');
 var plist = require('simple-plist');
 var decompress = require('decompress-zip');
@@ -25,6 +26,33 @@ module.exports = function (file, callback){
     var path = glob.sync(output.path + '/Payload/*/')[0];
 
     data.metadata = plist.readFileSync(path + 'Info.plist');
+    var iconFiles = [].concat(data.metadata['CFBundleIcons~ipad'].CFBundlePrimaryIcon.CFBundleIconFiles, data.metadata.CFBundleIcons.CFBundlePrimaryIcon.CFBundleIconFiles, data.metadata.CFBundleIconFiles);
+    var biggestIcon = iconFiles.reduce(function(biggest, current) {
+      if (typeof current !== "string" || !fs.existsSync(path + current)) {
+        return biggest;
+      }
+
+      if (biggest === null) {
+        return {
+          name: current,
+          stats: fs.statSync(path + current)
+        }
+      }
+
+      var stats = fs.statSync(path + current);
+      if (stats.size > biggest.stats.size) {
+        return {
+          name: current,
+          stats: stats
+        }
+      }
+
+      return biggest;
+    }, null);
+
+    if (biggestIcon !== null && biggestIcon.stats.isFile()) {
+      data.iconImage = fs.readFileSync(path + biggestIcon.name);
+    }
 
     var tasks = [
       async.apply(provisioning, path + 'embedded.mobileprovision')
