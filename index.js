@@ -26,7 +26,7 @@ module.exports = function (file, callback){
     var path = glob.sync(output.path + '/Payload/*/')[0];
 
     data.metadata = plist.readFileSync(path + 'Info.plist');
-    var iconFiles = [].concat(data.metadata['CFBundleIcons~ipad'].CFBundlePrimaryIcon.CFBundleIconFiles, data.metadata.CFBundleIcons.CFBundlePrimaryIcon.CFBundleIconFiles, data.metadata.CFBundleIconFiles);
+    var iconFiles = [].concat(((data.metadata['CFBundleIcons~ipad'] || {}).CFBundlePrimaryIcon || {}).CFBundleIconFiles, ((data.metadata.CFBundleIcons || {}).CFBundlePrimaryIcon || {}).CFBundleIconFiles, data.metadata.CFBundleIconFiles);
     var biggestIcon = iconFiles.reduce(function(biggest, current) {
       if (typeof current !== "string" || !fs.existsSync(path + current)) {
         return biggest;
